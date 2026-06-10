@@ -23,6 +23,30 @@ const client = new MongoClient(uri, {
     }
 });
 
+async function run() {
+    try {
+        await client.connect();
+        const db = client.db("cargridhub");
+        const carCollection = db.collection("cars")
+
+        app.post("/cars", async (req, res) => {
+            const carData = req.body;
+            const result = await carCollection.insertOne(carData);
+            res.json(result)
+        })
+        app.get("/cars", async (req, res) => {
+            const cars = await carCollection.find().toArray();
+            res.send(cars);
+        });
+
+        await client.db("admin").command({ ping: 1 });
+        console.log("Pinged your deployment. You successfully connected to MongoDB!")
+    } catch (error) {
+        console.error("MongoDB connection error:", error);
+    }
+}
+run().catch(console.dir)
+
 app.get('/', (req, res) => {
     res.send("Server is running fine!")
 })
