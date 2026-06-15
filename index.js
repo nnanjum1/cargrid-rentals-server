@@ -56,11 +56,39 @@ async function run() {
         });
 
 
+        // app.post("/bookings", async (req, res) => {
+        //     const bookingData = req.body;
+        //     const result = await bookingCollection.insertOne(bookingData);
+        //     res.json(result)
+        // })
+
+
         app.post("/bookings", async (req, res) => {
-            const bookingData = req.body;
-            const result = await bookingCollection.insertOne(bookingData);
-            res.json(result)
-        })
+
+            const { carId, bookingDate } = req.body;
+
+
+            const existing = await bookingCollection.findOne({
+                carId,
+                bookingDate,
+            });
+
+            if (existing) {
+                return res.status(400).json({
+                    message: "Car already booked on this date",
+                });
+            }
+
+            const result = await bookingCollection.insertOne(req.body);
+            await carCollection.updateOne(
+                { _id: new ObjectId(carId) },
+                { $inc: { bookingCount: 1 } }
+            );
+
+            res.send(result);
+
+
+        });
 
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!")
