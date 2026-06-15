@@ -28,6 +28,7 @@ async function run() {
         await client.connect();
         const db = client.db("cargridhub");
         const carCollection = db.collection("cars")
+        const bookingCollection = db.collection("bookings")
 
         app.post("/cars", async (req, res) => {
             const carData = req.body;
@@ -38,6 +39,28 @@ async function run() {
             const cars = await carCollection.find().toArray();
             res.send(cars);
         });
+
+
+        app.get("/cars/:id", async (req, res) => {
+            try {
+                const car = await carCollection.findOne({
+                    _id: new ObjectId(req.params.id),
+                });
+
+                if (!car) return res.status(404).json({ message: "Car not found" });
+
+                res.send(car);
+            } catch (err) {
+                res.status(500).json({ message: "Server error" });
+            }
+        });
+
+
+        app.post("/bookings", async (req, res) => {
+            const bookingData = req.body;
+            const result = await bookingCollection.insertOne(bookingData);
+            res.json(result)
+        })
 
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!")
