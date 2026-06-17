@@ -55,6 +55,16 @@ async function run() {
             }
         });
 
+        app.get("/my-cars", async (req, res) => {
+            const email = req.query.email;
+
+            const cars = await carCollection.find({
+                addedBy: email,
+            }).toArray();
+
+            res.send(cars);
+        });
+
 
         // app.post("/bookings", async (req, res) => {
         //     const bookingData = req.body;
