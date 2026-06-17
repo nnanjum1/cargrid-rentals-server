@@ -90,6 +90,16 @@ async function run() {
 
         });
 
+        app.get("/bookings", async (req, res) => {
+            const email = req.query.email;
+
+            const bookings = await bookingCollection
+                .find({ userEmail: email })
+                .toArray();
+
+            res.send(bookings);
+        });
+
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!")
     } catch (error) {
