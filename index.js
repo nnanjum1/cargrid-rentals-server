@@ -25,7 +25,7 @@ const client = new MongoClient(uri, {
 });
 
 const JWKS = createRemoteJWKSet(
-    new URL("http://localhost:3000/api/auth/jwks")
+    new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
 );
 const verifyToken = async (req, res, next) => {
     const authHeader = req?.headers.authorization;
@@ -50,7 +50,7 @@ const verifyToken = async (req, res, next) => {
 
 async function run() {
     try {
-        await client.connect();
+        // await client.connect();
         const db = client.db("cargridhub");
         const carCollection = db.collection("cars")
         const bookingCollection = db.collection("bookings")
@@ -63,10 +63,7 @@ async function run() {
             res.json(result)
         })
 
-        // app.get("/cars", async (req, res) => {
-        //     const cars = await carCollection.find().toArray();
-        //     res.send(cars);
-        // });
+
 
         app.get("/cars", async (req, res) => {
             const { search, type } = req.query;
@@ -113,12 +110,6 @@ async function run() {
             res.send(cars);
         });
 
-
-        // app.post("/bookings", async (req, res) => {
-        //     const bookingData = req.body;
-        //     const result = await bookingCollection.insertOne(bookingData);
-        //     res.json(result)
-        // })
 
 
         app.post("/bookings", verifyToken, async (req, res) => {
@@ -193,7 +184,7 @@ async function run() {
             }
         });
 
-        await client.db("admin").command({ ping: 1 });
+        // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!")
     } catch (error) {
         console.error("MongoDB connection error:", error);
