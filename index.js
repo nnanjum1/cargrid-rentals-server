@@ -5,7 +5,8 @@ const express = require('express');
 const cors = require('cors')
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const dotenv = require('dotenv')
+const dotenv = require('dotenv');
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 dotenv.config()
 
 const uri = process.env.MONGODB_URI;
@@ -23,6 +24,30 @@ const client = new MongoClient(uri, {
     }
 });
 
+const JWKS = createRemoteJWKSet(
+    new URL("http://localhost:3000/api/auth/jwks")
+);
+const verifyToken = async (req, res, next) => {
+    const authHeader = req?.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+    const token = authHeader.split(" ")[1];
+    if (!token) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+        const { payload } = await jwtVerify(token, JWKS);
+        req.user = payload;
+        console.log(payload);
+        next();
+    } catch (error) {
+        return res.status(403).json({ message: "Forbidden" });
+    }
+};
+
+
 async function run() {
     try {
         await client.connect();
@@ -30,18 +55,43 @@ async function run() {
         const carCollection = db.collection("cars")
         const bookingCollection = db.collection("bookings")
 
-        app.post("/cars", async (req, res) => {
+        app.post("/cars", verifyToken, async (req, res) => {
             const carData = req.body;
+            carData.addedBy = req.user.email;
+
             const result = await carCollection.insertOne(carData);
             res.json(result)
         })
+
+        // app.get("/cars", async (req, res) => {
+        //     const cars = await carCollection.find().toArray();
+        //     res.send(cars);
+        // });
+
         app.get("/cars", async (req, res) => {
-            const cars = await carCollection.find().toArray();
+            const { search, type } = req.query;
+
+            let query = {};
+
+            if (search) {
+                query.name = {
+                    $regex: search,
+                    $options: "i",
+                };
+            }
+
+            if (type) {
+                query.type = {
+                    $in: type.split(","),
+                };
+            }
+
+            const cars = await carCollection.find(query).toArray();
             res.send(cars);
         });
 
 
-        app.get("/cars/:id", async (req, res) => {
+        app.get("/cars/:id", verifyToken, async (req, res) => {
             try {
                 const car = await carCollection.findOne({
                     _id: new ObjectId(req.params.id),
@@ -55,12 +105,10 @@ async function run() {
             }
         });
 
-        app.get("/my-cars", async (req, res) => {
-            const email = req.query.email;
+        app.get("/my-cars", verifyToken, async (req, res) => {
+            const email = req.user.email;
 
-            const cars = await carCollection.find({
-                addedBy: email,
-            }).toArray();
+            const cars = await carCollection.find({ addedBy: email }).toArray();
 
             res.send(cars);
         });
@@ -73,7 +121,7 @@ async function run() {
         // })
 
 
-        app.post("/bookings", async (req, res) => {
+        app.post("/bookings", verifyToken, async (req, res) => {
 
             const { carId, bookingDate } = req.body;
 
@@ -100,7 +148,7 @@ async function run() {
 
         });
 
-        app.get("/bookings", async (req, res) => {
+        app.get("/bookings", verifyToken, async (req, res) => {
             const email = req.query.email;
 
             const bookings = await bookingCollection
@@ -110,7 +158,7 @@ async function run() {
             res.send(bookings);
         });
 
-        app.delete("/cars/:id", async (req, res) => {
+        app.delete("/cars/:id", verifyToken, async (req, res) => {
             const result = await carCollection.deleteOne({
                 _id: new ObjectId(req.params.id),
             });
@@ -118,7 +166,7 @@ async function run() {
             res.send(result);
         });
 
-        app.put("/cars/:id", async (req, res) => {
+        app.put("/cars/:id", verifyToken, async (req, res) => {
             try {
                 const id = req.params.id;
                 const updatedCar = req.body;
