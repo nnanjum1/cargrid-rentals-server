@@ -140,7 +140,7 @@ async function run() {
         });
 
         app.get("/bookings", verifyToken, async (req, res) => {
-            const email = req.query.email;
+            const email = req.user.email;
 
             const bookings = await bookingCollection
                 .find({ userEmail: email })
