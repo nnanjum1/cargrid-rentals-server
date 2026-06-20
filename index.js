@@ -156,16 +156,15 @@ async function run() {
 
             res.send(result);
         });
+
         app.get("/bookings/:id", async (req, res) => {
-            const { carId } = req.params;
+            const carId = req.params.id;
 
             const bookings = await bookingCollection
                 .find({ carId })
                 .toArray();
 
-            const bookedDates = bookings.map(
-                booking => booking.bookingDate
-            );
+            const bookedDates = bookings.map(b => b.bookingDate);
 
             res.send(bookedDates);
         });
