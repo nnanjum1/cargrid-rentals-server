@@ -88,7 +88,7 @@ async function run() {
         });
 
 
-        app.get("/cars/:id", verifyToken, async (req, res) => {
+        app.get("/cars/:id", async (req, res) => {
             try {
                 const car = await carCollection.findOne({
                     _id: new ObjectId(req.params.id),
@@ -149,7 +149,7 @@ async function run() {
             res.send(bookings);
         });
 
-        app.delete("/cars/:id", async (req, res) => {
+        app.delete("/cars/:id", verifyToken, async (req, res) => {
             const result = await carCollection.deleteOne({
                 _id: new ObjectId(req.params.id),
             });
@@ -158,15 +158,19 @@ async function run() {
         });
 
         app.get("/bookings/:id", async (req, res) => {
-            const carId = req.params.id;
+            try {
+                const carId = req.params.id;
 
-            const bookings = await bookingCollection
-                .find({ carId })
-                .toArray();
+                const bookings = await bookingCollection
+                    .find({ carId })
+                    .toArray();
 
-            const bookedDates = bookings.map(b => b.bookingDate);
+                const bookedDates = bookings.map(b => b.bookingDate);
 
-            res.send(bookedDates);
+                res.status(200).json(bookedDates);
+            } catch (err) {
+                res.status(500).json({ message: "Server error" });
+            }
         });
 
         app.put("/cars/:id", verifyToken, async (req, res) => {
