@@ -149,14 +149,14 @@ async function run() {
             res.send(bookings);
         });
 
-        app.delete("/cars/:id", verifyToken, async (req, res) => {
+        app.delete("/cars/:id", async (req, res) => {
             const result = await carCollection.deleteOne({
                 _id: new ObjectId(req.params.id),
             });
 
             res.send(result);
         });
-        app.get("/bookings/:carId", async (req, res) => {
+        app.get("/bookings/:id", async (req, res) => {
             const { carId } = req.params;
 
             const bookings = await bookingCollection
