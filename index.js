@@ -156,6 +156,19 @@ async function run() {
 
             res.send(result);
         });
+        app.get("/bookings/:carId", async (req, res) => {
+            const { carId } = req.params;
+
+            const bookings = await bookingCollection
+                .find({ carId })
+                .toArray();
+
+            const bookedDates = bookings.map(
+                booking => booking.bookingDate
+            );
+
+            res.send(bookedDates);
+        });
 
         app.put("/cars/:id", verifyToken, async (req, res) => {
             try {
